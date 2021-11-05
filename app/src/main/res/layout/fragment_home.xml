@@ -43,39 +43,45 @@
 
     <ImageView
         android:id="@+id/Semafor1"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginEnd="16dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="56dp"
         android:foreground="@drawable/ic_cercle_red"
+        android:scaleX="3"
+        android:scaleY="3"
         android:src="@android:drawable/presence_invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/Semafor2"
         app:layout_constraintTop_toBottomOf="@+id/button"
-        app:layout_constraintVertical_bias="0.158" />
+        app:layout_constraintVertical_bias="0.193" />
 
     <ImageView
         android:id="@+id/Semafor2"
-        android:layout_width="50"
-        android:layout_height="50"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:foreground="@drawable/ic_cercle_orange"
+        android:scaleX="3"
+        android:scaleY="3"
         android:src="@android:drawable/presence_invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.515"
+        app:layout_constraintHorizontal_bias="0.521"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/button"
-        app:layout_constraintVertical_bias="0.158" />
+        app:layout_constraintVertical_bias="0.193" />
 
     <ImageView
         android:id="@+id/Semafor3"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginStart="16dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="56dp"
         android:foreground="@drawable/ic_cercle_green"
+        android:scaleX="3"
+        android:scaleY="3"
         android:src="@android:drawable/presence_invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@+id/Semafor2"
         app:layout_constraintTop_toBottomOf="@+id/button"
-        app:layout_constraintVertical_bias="0.158" />
+        app:layout_constraintVertical_bias="0.193" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
