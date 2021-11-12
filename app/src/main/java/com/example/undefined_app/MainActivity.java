@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                 // If server responds with ping, the message will be successful, otherwise, will show an error.
                 if (msg.equals("ping"))
                 {
-                    msg = "Connected to server";
+                    msg = "Servidor Disponible";
                     final ImageView semafor1 = findViewById(R.id.Semafor1);
                     final ImageView semafor2 = findViewById(R.id.Semafor2);
                     final ImageView semafor3 = findViewById(R.id.Semafor3);
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else
                 {
-                    msg = "Connection failed";
+                    msg = "Connexió fallida";
                 }
                 Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
                 client.close();
