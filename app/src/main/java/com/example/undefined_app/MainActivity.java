@@ -10,17 +10,17 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-import androidx.annotation.DrawableRes;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.undefined_app.databinding.ActivityMainBinding;
+import com.example.undefined_app.ui.home.HomeFragment;
+import com.example.undefined_app.ui.home.HomeViewModel;
 
 import java.io.IOException;
 
@@ -30,28 +30,19 @@ import lipermi.net.Client;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String serverIP = null;
-
     private ActivityMainBinding binding;
 
-    int connection_status = 0;
+    // Saving homeViewModel
+    HomeViewModel homeViewModel;
 
-    @SuppressLint("UseCompatLoadingForDrawables")
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
-        // Get serverIP input
-        EditText serverInput = findViewById(R.id.Kahoot_id_input);
-        serverIP = serverInput.getText().toString();
-
-        Button connect = findViewById(R.id.connect_button);
-        connect.setOnClickListener(v -> new Conn().execute());
 
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
@@ -62,26 +53,20 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.navView, navController);
 
-        final ImageView semafor1 = findViewById(R.id.Semafor1);
-        final ImageView semafor2 = findViewById(R.id.Semafor2);
-        final ImageView semafor3 = findViewById(R.id.Semafor3);
+        // Get serverIP input
+        EditText serverInput = findViewById(R.id.Kahoot_id_input);
+        // Store ip at homeViewModel serverIP variable
+        try {
+            homeViewModel.setServerIP(serverInput.getText().toString());
+        } catch (Exception e) {
+            homeViewModel.setServerIP("");
+        }
 
-        if (connection_status == 0) {
-            semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_red));
-            semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-            semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-        }
-        if (connection_status == 1) {
-            semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-            semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_orange));
-            semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-        }
-        if (connection_status == 2) {
-            semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-            semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-            semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_green));
-        }
+        // Get connect button
+        Button connect = findViewById(R.id.connect_button);
+        connect.setOnClickListener(v -> new Conn().execute());
     }
+
     @SuppressLint("StaticFieldLeak")
     class Conn extends AsyncTask<Void, Void, MainActivity> {
 
@@ -92,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
             Looper.prepare();
             try {
                 CallHandler callHandler = new CallHandler();
-                Client client = new Client(serverIP, 7777, callHandler);
+                Client client = new Client(homeViewModel.getServerIP(), 7777, callHandler);
                 Connect testService = (Connect) client.getGlobal(Connect.class);
                 String msg = testService.ping();
                 // If server responds with ping, the message will be successful, otherwise, will show an error.
@@ -103,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                     final ImageView semafor2 = findViewById(R.id.Semafor2);
                     final ImageView semafor3 = findViewById(R.id.Semafor3);
 
-                    connection_status = 1;
+                    homeViewModel.setConnection_status(1);
 
                     semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
                     semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_orange));
@@ -114,7 +99,8 @@ public class MainActivity extends AppCompatActivity {
                 {
                     msg = "Connexió fallida";
                 }
-                Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+
+                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
                 client.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -122,6 +108,5 @@ public class MainActivity extends AppCompatActivity {
             Looper.loop();
             return null;
         }
-
     }
 }
