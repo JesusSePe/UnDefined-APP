@@ -1,10 +1,14 @@
 package com.example.undefined_app;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -65,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
         // Get connect button
         Button connect = findViewById(R.id.connect_button);
         connect.setOnClickListener(v -> new Conn().execute());
+
+
     }
 
     @SuppressLint("StaticFieldLeak")
