@@ -1,6 +1,8 @@
 package com.example.undefined_app.ui.home;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -12,9 +14,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.savedstate.SavedStateRegistry;
 
 import com.example.undefined_app.R;
 import com.example.undefined_app.databinding.FragmentHomeBinding;
+
+import java.util.Objects;
 
 public class HomeFragment extends Fragment {
 
@@ -65,6 +70,4 @@ public class HomeFragment extends Fragment {
         super.onDestroyView();
         binding = null;
     }
-
-
 }

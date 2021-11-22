@@ -1,14 +1,10 @@
 package com.example.undefined_app;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
-import android.preference.PreferenceManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -23,12 +19,12 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.undefined_app.databinding.ActivityMainBinding;
-import com.example.undefined_app.ui.home.HomeFragment;
 import com.example.undefined_app.ui.home.HomeViewModel;
 
 import java.io.IOException;
+import java.io.Serializable;
 
-import Connection.Connect;
+import ServerConfig.ServerInterface;
 import lipermi.handler.CallHandler;
 import lipermi.net.Client;
 
@@ -39,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     // Saving homeViewModel
     HomeViewModel homeViewModel;
 
+    @SuppressLint("UseCompatLoadingForDrawables")
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,22 +57,24 @@ public class MainActivity extends AppCompatActivity {
 
         // Get serverIP input
         EditText serverInput = findViewById(R.id.Kahoot_id_input);
-        // Store ip at homeViewModel serverIP variable
-        try {
-            homeViewModel.setServerIP(serverInput.getText().toString());
-        } catch (Exception e) {
-            homeViewModel.setServerIP("");
-        }
+
 
         // Get connect button
         Button connect = findViewById(R.id.connect_button);
-        connect.setOnClickListener(v -> new Conn().execute());
-
-
+        connect.setOnClickListener(v -> {
+            // Store ip at homeViewModel serverIP variable
+            try {
+                homeViewModel.setServerIP(serverInput.getText().toString());
+            } catch (Exception e) {
+                homeViewModel.setServerIP("");
+            }
+            System.out.println("Server: " + homeViewModel.getServerIP());
+            new Conn().execute();
+        });
     }
 
     @SuppressLint("StaticFieldLeak")
-    class Conn extends AsyncTask<Void, Void, MainActivity> {
+    class Conn extends AsyncTask<Void, Void, MainActivity> implements Serializable {
 
         @SuppressLint("UseCompatLoadingForDrawables")
         @RequiresApi(api = Build.VERSION_CODES.M)
@@ -82,33 +82,57 @@ public class MainActivity extends AppCompatActivity {
         protected MainActivity doInBackground(Void... params) {
             Looper.prepare();
             try {
+                System.out.println("Preparing Handler...");
                 CallHandler callHandler = new CallHandler();
+                System.out.println("Creating client...");
                 Client client = new Client(homeViewModel.getServerIP(), 7777, callHandler);
-                Connect testService = (Connect) client.getGlobal(Connect.class);
-                String msg = testService.ping();
+                System.out.println("Initializing server...");
+                ServerInterface pingService = (ServerInterface) client.getGlobal(ServerInterface.class);
+                System.out.println("Pinging...");
+                String msg = pingService.ping();
+                System.out.println("Ping done");
+                System.out.println("Response: " + msg);
                 // If server responds with ping, the message will be successful, otherwise, will show an error.
                 if (msg.equals("ping"))
                 {
                     msg = "Servidor Disponible";
-                    final ImageView semafor1 = findViewById(R.id.Semafor1);
-                    final ImageView semafor2 = findViewById(R.id.Semafor2);
-                    final ImageView semafor3 = findViewById(R.id.Semafor3);
-
                     homeViewModel.setConnection_status(1);
+                    runOnUiThread(() -> {
+                        final ImageView semafor1 = findViewById(R.id.Semafor1);
+                        final ImageView semafor2 = findViewById(R.id.Semafor2);
+                        final ImageView semafor3 = findViewById(R.id.Semafor3);
 
-                    semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                    semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_orange));
-                    semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                        switch (homeViewModel.getConnection_status()) {
 
+                            case 0:
+                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_red));
+                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                break;
+                            case 1:
+                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_orange));
+                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                break;
+                            case 2:
+                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_green));
+                                break;
+                        }
+
+                    });
                 }
                 else
                 {
+                    System.out.println("Connexió fallida");
                     msg = "Connexió fallida";
                 }
-
+                System.out.println(msg);
                 Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
                 client.close();
             } catch (IOException e) {
+                System.out.println("Something went wrong");
                 e.printStackTrace();
             }
             Looper.loop();

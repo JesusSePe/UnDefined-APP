@@ -1,12 +1,6 @@
 package com.example.undefined_app.ui.home;
 
-import android.widget.ImageView;
-
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-
-import com.example.undefined_app.R;
 
 public class HomeViewModel extends ViewModel {
 
@@ -17,8 +11,17 @@ public class HomeViewModel extends ViewModel {
 
     public HomeViewModel() {
         setServerIP(null);
-        setConnection_status(0);
+        try {
+            if (getConnection_status() >= 0) {
+                setConnection_status(getConnection_status());
+            } else {
+                setConnection_status(0);
+            }
+        } catch (Exception e) {
+            setConnection_status(0);
+        }
 
+        setConnection_status(0);
     }
 
     public String getServerIP() {
