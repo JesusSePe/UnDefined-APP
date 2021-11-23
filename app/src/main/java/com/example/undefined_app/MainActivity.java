@@ -1,16 +1,21 @@
 package com.example.undefined_app;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -23,6 +28,7 @@ import com.example.undefined_app.ui.home.HomeViewModel;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import ServerConfig.ServerInterface;
 import lipermi.handler.CallHandler;
@@ -74,18 +80,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("StaticFieldLeak")
-    class Conn extends AsyncTask<Void, Void, MainActivity> implements Serializable {
+    class Conn extends AsyncTask<Void, AppCompatActivity, MainActivity> implements Serializable {
 
         @SuppressLint("UseCompatLoadingForDrawables")
         @RequiresApi(api = Build.VERSION_CODES.M)
         @Override
         protected MainActivity doInBackground(Void... params) {
+            Client client = null;
             Looper.prepare();
             try {
                 System.out.println("Preparing Handler...");
                 CallHandler callHandler = new CallHandler();
                 System.out.println("Creating client...");
-                Client client = new Client(homeViewModel.getServerIP(), 7777, callHandler);
+                client = new Client(homeViewModel.getServerIP(), 7777, callHandler);
                 System.out.println("Initializing server...");
                 ServerInterface pingService = (ServerInterface) client.getGlobal(ServerInterface.class);
                 System.out.println("Pinging...");
@@ -97,31 +104,19 @@ public class MainActivity extends AppCompatActivity {
                 {
                     msg = "Servidor Disponible";
                     homeViewModel.setConnection_status(1);
+
+                    // Update status lights
                     runOnUiThread(() -> {
                         final ImageView semafor1 = findViewById(R.id.Semafor1);
                         final ImageView semafor2 = findViewById(R.id.Semafor2);
                         final ImageView semafor3 = findViewById(R.id.Semafor3);
 
-                        switch (homeViewModel.getConnection_status()) {
-
-                            case 0:
-                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_red));
-                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                break;
-                            case 1:
-                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_orange));
-                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                break;
-                            case 2:
-                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_green));
-                                break;
-                        }
+                        semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                        semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_orange));
+                        semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
 
                     });
+
                 }
                 else
                 {
@@ -130,13 +125,84 @@ public class MainActivity extends AppCompatActivity {
                 }
                 System.out.println(msg);
                 Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+
+                // Check if there's an active Kahoot session
+                boolean active = false;
+                while (!active){
+                    active = pingService.checkActive();
+                }
+
+                // Send username to server
+                if (homeViewModel.getConnection_status() >= 1) {
+                    String uname = CheckUsername(getApplicationContext());
+                    if (uname != null) {
+                        String regResult = pingService.register(uname);
+                        if (regResult.equals("true")) {
+                            homeViewModel.setConnection_status(2);
+                            // Update status lights
+                            runOnUiThread(() -> {
+                                final ImageView semafor1 = findViewById(R.id.Semafor1);
+                                final ImageView semafor2 = findViewById(R.id.Semafor2);
+                                final ImageView semafor3 = findViewById(R.id.Semafor3);
+
+                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_green));
+
+                            });
+                        } else if (regResult.equals("KAD-0001")) {
+                            runOnUiThread(() -> {
+                                // Show bad username error
+                                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                builder.setMessage("ERROR nom d'usuari ja existent.")
+                                        .setCancelable(false)
+                                        .setPositiveButton("OK", (dialog, id) -> dialog.cancel());
+                                AlertDialog alert = builder.create();
+                                alert.show();
+                            });
+                        } else {
+                            runOnUiThread(() -> {
+                                // Show generic error
+                                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                builder.setMessage("ERROR desconegut.")
+                                        .setCancelable(false)
+                                        .setPositiveButton("OK", (dialog, id) -> dialog.cancel());
+                                AlertDialog alert = builder.create();
+                                alert.show();
+                            });
+                        }
+                    }
+                }
+
                 client.close();
             } catch (IOException e) {
                 System.out.println("Something went wrong");
                 e.printStackTrace();
             }
+            // Close connection
+            try {
+                if (client != null) {
+                    client.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             Looper.loop();
             return null;
+        }
+
+        protected String CheckUsername (Context cont) {
+            String uname;
+            // Send username to server
+            // Get username from SharedPreferences
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(cont);
+            // Show username
+            uname = sharedPref.getString("username", "UnDefined");
+            if (uname.equals("UnDefined")) {
+                Toast.makeText(cont, "ERROR de connexió.", Toast.LENGTH_SHORT).show();
+                uname = null;
+            }
+            return uname;
         }
     }
 }

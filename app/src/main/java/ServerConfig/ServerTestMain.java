@@ -3,7 +3,8 @@ package ServerConfig;
 public class ServerTestMain {
 
     public static void main(String[] args) {
-        Server Server = new Server();
+        Server server = new Server();
+        server.setIsActive(true);
 
     }
 
