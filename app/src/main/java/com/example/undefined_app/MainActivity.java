@@ -1,6 +1,7 @@
 package com.example.undefined_app;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -164,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 // Redirect to new Activity.
                                 Thread.sleep(Integer.parseInt(Objects.requireNonNull(info.get("temps_inici")))* 1000L);
-                                sendMessage(info, pingService, uname);
+                                sendMessage(info, homeViewModel.getServerIP(), uname);
 
                             } else if (regResult.equals("KAD-0001")) {
                                 runOnUiThread(() -> {
@@ -230,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
             return uname;
         }
 
-        protected void sendMessage(HashMap<String, String> gameData, ServerInterface server, String uname) {
+        protected void sendMessage(HashMap<String, String> gameData, String server, String uname) {
             Intent intent = new Intent(getApplicationContext(), Game.class);
             intent.putExtra("pregunta", gameData.get("pregunta"));
             intent.putExtra("resposta1", gameData.get("resposta1"));
@@ -238,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("resposta3", gameData.get("resposta3"));
             intent.putExtra("resposta4", gameData.get("resposta4"));
             intent.putExtra("temps_preguntes", gameData.get("temps_preguntes"));
-            intent.putExtra("server", (Serializable) server);
+            //intent.putExtra("server", server);
             intent.putExtra("uname", uname);
             startActivity(intent);
         }

@@ -56,15 +56,11 @@
         app:layout_constraintHorizontal_bias="0.929"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <EditText
+    <TextView
         android:id="@+id/timeout"
-        android:layout_width="125dp"
-        android:layout_height="42dp"
-        android:editable="false"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:textAlignment="center"
-        app:layout_constraintBottom_toTopOf="@+id/button2"
+        android:layout_width="72dp"
+        android:layout_height="30dp"
+        app:layout_constraintBottom_toTopOf="@+id/button1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
