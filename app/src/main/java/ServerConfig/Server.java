@@ -3,6 +3,7 @@ package ServerConfig;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import lipermi.exception.LipeRMIException;
 import lipermi.handler.CallHandler;
@@ -12,8 +13,13 @@ public class Server implements ServerInterface {
     // properties
     ArrayList<String> users = new ArrayList<String>();
     boolean isActive = false;
+    HashMap<String, String> gameData = null;
+    String correct;
+    HashMap<String, Integer> ranking = null;
+    long time_started;
 
     // Setters and Getters
+
     public ArrayList<String> getUsers() {
         return users;
     }
@@ -29,6 +35,48 @@ public class Server implements ServerInterface {
     public void setIsActive(boolean isActive) {
         this.isActive = isActive;
     }
+
+    public HashMap<String, String> getGameData() {
+        return gameData;
+    }
+
+    public void setGameData(HashMap<String, String> gameData) {
+        /*
+         * Structure should be like this:
+         * pregunta = pregunta
+         * resposta1 = resposta1
+         * resposta2 = resposta2
+         * ...
+         * temps_preguntes = Y segons
+         * temps_inici = X segons
+         */
+        this.gameData = gameData;
+    }
+
+    public String getCorrect() {
+        return correct;
+    }
+
+    public void setCorrect(String correct) {
+        this.correct = correct;
+    }
+
+    public HashMap<String, Integer> getRanking() {
+        return ranking;
+    }
+
+    public void setRanking(HashMap<String, Integer> ranking) {
+        this.ranking = ranking;
+    }
+
+    public long getTime_started() {
+        return time_started;
+    }
+
+    public void setTime_started() {
+        this.time_started = System.currentTimeMillis();
+    }
+
 
     // Constructor
     public Server() {
@@ -90,7 +138,36 @@ public class Server implements ServerInterface {
 
     @Override
     public boolean checkActive() {
+        System.out.println(getIsActive());
         return getIsActive();
+    }
+
+    @Override
+    public HashMap<String, String> newGameData() {
+        return getGameData();
+    }
+
+    @Override
+    public void answer(String uname, String answer) {
+        // Check if answer is correct
+        if (answer.equals(getCorrect())) {
+            // Calculate question points
+            long curTime = System.currentTimeMillis();
+            long startTime = getTime_started();
+            long difMilliseconds = curTime-startTime;;
+            Integer secs = Integer.parseInt(getGameData().get("temps_preguntes"));
+            Integer questionPts = Math.round(1000-(difMilliseconds/secs)+500);
+
+            // Add the new points to user's current points.
+            Integer oldPts = (Integer) getRanking().get(uname);
+            if (oldPts.equals(null)) {
+                oldPts = 0;
+            }
+            Integer usrPts = oldPts + questionPts;
+
+            // Update user points
+            getRanking().put(uname, usrPts);
+        }
     }
 
 }

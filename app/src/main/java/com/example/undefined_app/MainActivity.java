@@ -2,6 +2,7 @@ package com.example.undefined_app;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -9,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -28,8 +30,11 @@ import com.example.undefined_app.ui.home.HomeViewModel;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import ServerConfig.Server;
 import ServerConfig.ServerInterface;
 import lipermi.handler.CallHandler;
 import lipermi.net.Client;
@@ -117,65 +122,85 @@ public class MainActivity extends AppCompatActivity {
 
                     });
 
+                    System.out.println(msg);
+                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+
+                    // Check if there's an active game
+                    boolean active = false;
+                    while (!active) {
+                        active = pingService.checkActive();
+                        if (!active) {
+                            Thread.sleep(3000);
+                        }
+                    }
+
+
+                    // Send username to server
+                    if (homeViewModel.getConnection_status() >= 1) {
+                        String uname = CheckUsername(getApplicationContext());
+                        if (uname != null) {
+                            String regResult = pingService.register(uname);
+                            if (regResult.equals("true")) {
+                                homeViewModel.setConnection_status(2);
+                                // Update status lights
+                                runOnUiThread(() -> {
+                                    final ImageView semafor1 = findViewById(R.id.Semafor1);
+                                    final ImageView semafor2 = findViewById(R.id.Semafor2);
+                                    final ImageView semafor3 = findViewById(R.id.Semafor3);
+
+                                    semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                    semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
+                                    semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_green));
+
+                                });
+                                // Get new kahoot info
+                                HashMap <String, String> info = null;
+                                while (info == null) {
+                                    info = pingService.newGameData();
+                                    if (info == null) {
+                                        Thread.sleep(2000);
+                                    }
+                                }
+
+                                // Redirect to new Activity.
+                                Thread.sleep(Integer.parseInt(Objects.requireNonNull(info.get("temps_inici")))* 1000L);
+                                sendMessage(info, pingService, uname);
+
+                            } else if (regResult.equals("KAD-0001")) {
+                                runOnUiThread(() -> {
+                                    // Show bad username error
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                    builder.setMessage("ERROR nom d'usuari ja existent.")
+                                            .setCancelable(false)
+                                            .setPositiveButton("OK", (dialog, id) -> dialog.cancel());
+                                    AlertDialog alert = builder.create();
+                                    alert.show();
+                                });
+
+                            // No connection
+                            } else {
+                                runOnUiThread(() -> {
+                                    // Show generic error
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                    builder.setMessage("ERROR desconegut.")
+                                            .setCancelable(false)
+                                            .setPositiveButton("OK", (dialog, id) -> dialog.cancel());
+                                    AlertDialog alert = builder.create();
+                                    alert.show();
+                                });
+                            }
+                        }
                 }
                 else
                 {
                     System.out.println("Connexió fallida");
                     msg = "Connexió fallida";
                 }
-                System.out.println(msg);
-                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
 
-                // Check if there's an active Kahoot session
-                boolean active = false;
-                while (!active){
-                    active = pingService.checkActive();
-                }
-
-                // Send username to server
-                if (homeViewModel.getConnection_status() >= 1) {
-                    String uname = CheckUsername(getApplicationContext());
-                    if (uname != null) {
-                        String regResult = pingService.register(uname);
-                        if (regResult.equals("true")) {
-                            homeViewModel.setConnection_status(2);
-                            // Update status lights
-                            runOnUiThread(() -> {
-                                final ImageView semafor1 = findViewById(R.id.Semafor1);
-                                final ImageView semafor2 = findViewById(R.id.Semafor2);
-                                final ImageView semafor3 = findViewById(R.id.Semafor3);
-
-                                semafor1.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                semafor2.setForeground(getResources().getDrawable(R.drawable.ic_cercle_gray));
-                                semafor3.setForeground(getResources().getDrawable(R.drawable.ic_cercle_green));
-
-                            });
-                        } else if (regResult.equals("KAD-0001")) {
-                            runOnUiThread(() -> {
-                                // Show bad username error
-                                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                                builder.setMessage("ERROR nom d'usuari ja existent.")
-                                        .setCancelable(false)
-                                        .setPositiveButton("OK", (dialog, id) -> dialog.cancel());
-                                AlertDialog alert = builder.create();
-                                alert.show();
-                            });
-                        } else {
-                            runOnUiThread(() -> {
-                                // Show generic error
-                                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                                builder.setMessage("ERROR desconegut.")
-                                        .setCancelable(false)
-                                        .setPositiveButton("OK", (dialog, id) -> dialog.cancel());
-                                AlertDialog alert = builder.create();
-                                alert.show();
-                            });
-                        }
-                    }
                 }
 
                 client.close();
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 System.out.println("Something went wrong");
                 e.printStackTrace();
             }
@@ -203,6 +228,19 @@ public class MainActivity extends AppCompatActivity {
                 uname = null;
             }
             return uname;
+        }
+
+        protected void sendMessage(HashMap<String, String> gameData, ServerInterface server, String uname) {
+            Intent intent = new Intent(getApplicationContext(), Game.class);
+            intent.putExtra("pregunta", gameData.get("pregunta"));
+            intent.putExtra("resposta1", gameData.get("resposta1"));
+            intent.putExtra("resposta2", gameData.get("resposta2"));
+            intent.putExtra("resposta3", gameData.get("resposta3"));
+            intent.putExtra("resposta4", gameData.get("resposta4"));
+            intent.putExtra("temps_preguntes", gameData.get("temps_preguntes"));
+            intent.putExtra("server", (Serializable) server);
+            intent.putExtra("uname", uname);
+            startActivity(intent);
         }
     }
 }
